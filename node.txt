@@ -1,0 +1,4 @@
+1.命名空间只影响调用,不影响包含
+2.文件系统(include,require)和代码系统不同(函数使用)
+3.strtr 字符串替换 
+	echo strtr('Holli Wirld', 'oi', 'eo');//Hello World
