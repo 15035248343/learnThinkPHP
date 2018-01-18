@@ -191,7 +191,65 @@ class Loader
             self::addClassMap(__include_file(RUNTIME_PATH.'classmap'.EXT));
         }
 
-        //
+        // Composer 自动加载支持
+        if (is_dir(VENDOR_PATH.'composer')) {
+            
+            self::registerComposerLoader();
+        }
+
+        // 自动加载 extend 目录
+        self::$fallbackDirsPsr4[] = rtrim(EXTEND_PATH, DS);
+    }
+    /**
+     * composer自动加载
+     * @access private
+     * @return void
+     */
+    private static function registerComposerLoader()
+    {
+        //命名空间文件
+        if (is_file(VENDOR_PATH.'composer/autoload_namespaces.php')) {
+            
+            $map = require VENDOR_PATH.'composer/autoload_namespaces.php';
+
+            foreach ($map as $namespace => $path) {
+                self::addPsr0($namespace, $path);
+            }
+        }
+
+        //命名空间规范
+        if (is_file(VENDOR_PATH.'composer/autoload_psr0.php')) {
+            
+            $map = require VENDOR_PATH.'composer/autoload_psr0.php';
+
+            foreach ($map as $namespace => $path) {
+                self::addPsr4($namespace, $path);
+            }    
+        }
+
+        //映射
+        if (is_file(VENDOR_PATH.'composer/autoload_classmap.php')) {
+            
+            $classMap = require VENDOR_PATH.'composer/autoload_classmap.php';
+
+            if ($classMap) {
+                self::addClassMap($classMap);
+            }    
+        }
+
+        if (is_file(VENDOR_PATH.'composer/autoload_files.php')) {
+            
+            $includeFiles = require VENDOR_PATH.'composer/autoload_files.php';
+
+            foreach ($includeFiles as $fileIdentifier => $file) {
+
+                if (empty(self::$autoloadFiles[$fileIdentifier])) {
+                    __include_file($file);
+
+                    self::$autoloadFiles[$fileIdentifier] = true;
+                }
+            }    
+        }
     }
 
     /**
@@ -252,7 +310,32 @@ class Loader
         }
     }
 
+    /**
+     * 添加 PSR-0 命名空间
+     * @access private
+     * @param  array|string $prefix  空间前缀
+     * @param  array        $paths   路径
+     * @param  bool         $prepend 预先设置的优先级更高
+     * @return void
+     */
+    private static function addPsr0($prefix, $paths, $prepend = false)
+    {
+        if (!$prefix) {
+            self::$fallbackDirsPsr0 = $prepend ?
+            array_merge((array) $paths, self::$fallbackDirsPsr0) :
+            array_merge(self::$fallbackDirsPsr0, (array) $paths);
+        } else {
+            $first = $prefix[0];
 
+            if (!isset(self::$prefixesPsr0[$first][$prefix])) {
+                self::$prefixesPsr0[$first][$prefix] = (array) $paths;
+            } else {
+                self::$prefixesPsr0[$first][$prefix] = $prepend ?
+                array_merge((array) $paths, self::$prefixesPsr0[$first][$prefix]) :
+                array_merge(self::$prefixesPsr0[$first][$prefix], (array) $paths);
+            }
+        }
+    }
     /**
      * 注册 classmap
      * @access public
