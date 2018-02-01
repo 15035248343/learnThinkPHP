@@ -70,3 +70,6 @@ if (is_file(ROOT_PATH.'.env')) {
 
 //注册自动加载
 think\Loader::register();
+
+//注册异常处理机制
+think\\Error::register();
